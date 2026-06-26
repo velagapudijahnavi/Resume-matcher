@@ -1,9 +1,9 @@
-[README (1).md](https://github.com/user-attachments/files/29369823/README.1.md)
+[Uploading README (2).md…]()
 # 🎯 Resume Matcher
 
 **An AI-powered backend system that matches resumes to job requirements using semantic understanding — not keyword matching.**
 
-![Python](https://img.shields.io/badge/Python-3.14+-3776AB?style=flat&logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.14-3776AB?style=flat&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
 ![Azure OpenAI](https://img.shields.io/badge/Azure-OpenAI-0078D4?style=flat&logo=microsoftazure&logoColor=white)
 ![FAISS](https://img.shields.io/badge/Vector%20Search-FAISS-FF6F00?style=flat)
@@ -32,6 +32,14 @@ User Input → Parser → Embedder → FAISS Index → Matcher → UI Results
 | **FAISS Vector Store** | Stores embeddings and performs fast, scalable similarity search |
 | **Matcher** | Compares query vectors against stored vectors, ranks results, and generates short explanations for each match |
 | **Frontend** | Displays ranked matches with relevance scores in a simple HTML/CSS/JS interface |
+
+## 🖥️ Live Demo
+
+![Resume Matcher UI](docs/screenshot.png)
+
+The system supports **two search directions**:
+- **Employer Search** — recruiters describe the candidate they need (e.g. *"Candidate with 5+ years of experience in finance, Python, and communication skills"*) and get ranked, scored matches from the resume pool
+- **Candidate Search** — candidates can search for relevant job openings based on their own profile
 
 ## ✨ Key Features
 
@@ -70,23 +78,28 @@ Display Ranked Results
 
 ```
 resume-matcher/
-├── app/
+├── backend/
 │   ├── main.py                 # FastAPI entrypoint
 │   ├── config.py               # App & Azure configuration
-│   ├── core/
-│   │   ├── parser.py           # Resume/JD text extraction
-│   │   ├── embedder.py         # Azure OpenAI embedding generation
-│   │   ├── matcher.py          # Ranking & explanation logic
-│   │   └── vector_store.py     # FAISS index management
-│   ├── services/
-│   │   └── azure_loader.py     # Azure Blob Storage integration
-│   └── frontend/                # HTML/CSS/JS client
+│   ├── parser.py                # Resume/JD text extraction
+│   ├── embedder.py              # Azure OpenAI embedding generation
+│   ├── matcher.py               # Ranking & explanation logic
+│   ├── vector_store.py          # FAISS index management
+│   ├── azure_loader.py          # Azure Blob Storage integration
+│   ├── .env                     # Environment variables (not committed)
+│   └── data/
+│       ├── faiss_index/          # Persisted FAISS vector index
+│       ├── jrs/                  # Job requirement files
+│       └── resumes/              # Candidate resume files
+├── frontend/
+│   └── index.html               # Employer Search / Candidate Search UI
 ├── tests/
 │   ├── test_parser.py
 │   ├── test_matcher.py
 │   └── test_vector_store.py
 ├── docs/
-│   └── architecture.svg
+│   ├── architecture.svg
+│   └── screenshot.png
 ├── .env.example
 ├── .gitignore
 ├── requirements.txt
@@ -96,7 +109,7 @@ resume-matcher/
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.14+
+- Python 3.14
 - An Azure account with OpenAI and Blob Storage access
 
 ### Installation
@@ -109,7 +122,7 @@ pip install -r requirements.txt
 
 ### Configuration
 
-Create a `.env` file based on `.env.example` and add your Azure credentials:
+Create a `.env` file inside `backend/` based on `.env.example` and add your Azure credentials:
 
 ```
 AZURE_OPENAI_KEY=your_key_here
@@ -120,10 +133,11 @@ AZURE_STORAGE_CONNECTION_STRING=your_connection_string_here
 ### Run the app
 
 ```bash
-uvicorn app.main:app --reload
+cd backend
+python main.py
 ```
 
-Then open the frontend in your browser to upload a resume/JD and view ranked matches.
+Then open `frontend/index.html` in your browser (or serve it locally) to try Employer Search or Candidate Search.
 
 ## ⚠️ Challenges & Solutions
 
