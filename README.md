@@ -3,7 +3,7 @@
 
 **An AI-powered backend system that matches resumes to job requirements using semantic understanding — not keyword matching.**
 
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.14+-3776AB?style=flat&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
 ![Azure OpenAI](https://img.shields.io/badge/Azure-OpenAI-0078D4?style=flat&logo=microsoftazure&logoColor=white)
 ![FAISS](https://img.shields.io/badge/Vector%20Search-FAISS-FF6F00?style=flat)
