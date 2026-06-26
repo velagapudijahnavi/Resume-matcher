@@ -96,7 +96,7 @@ resume-matcher/
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.10+
+- Python 3.14+
 - An Azure account with OpenAI and Blob Storage access
 
 ### Installation
