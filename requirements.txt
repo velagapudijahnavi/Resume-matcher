@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-dotenv
+azure-storage-blob
+pymupdf
+python-docx
+openai>=1.0.0
+faiss-cpu
+numpy
+python-multipart

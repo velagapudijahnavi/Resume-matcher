@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Resume Matcher</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f5f7;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1e293b;
+      color: white;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 22px; font-weight: 600; }
+    header p  { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+
+    #status-badge {
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: #334155;
+      color: #94a3b8;
+    }
+    #status-badge.ready   { background: #14532d; color: #86efac; }
+    #status-badge.loading { background: #1e3a5f; color: #93c5fd; }
+
+    main {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .tab {
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: 1.5px solid #d1d5db;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #4b5563;
+      transition: all 0.15s;
+    }
+    .tab:hover { border-color: #6366f1; color: #6366f1; }
+    .tab.active { background: #6366f1; border-color: #6366f1; color: white; }
+
+    /* Panel */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Search box */
+    .search-card {
+      background: white;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+    }
+    .search-card label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .search-row {
+      display: flex;
+      gap: 10px;
+    }
+    .search-row textarea {
+      flex: 1;
+      padding: 12px 14px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 80px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-row textarea:focus { border-color: #6366f1; }
+    .btn-search {
+      padding: 14px 28px;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      align-self: flex-end;
+      transition: background 0.15s;
+    }
+    .btn-search:hover    { background: #4f46e5; }
+    .btn-search:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+    .example-queries {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .example-queries span {
+      cursor: pointer;
+      color: #6366f1;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .example-queries span:hover { color: #4f46e5; }
+
+    /* Results */
+    .results-header {
+      font-size: 13px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+
+    .result-card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      border-left: 4px solid #6366f1;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; } }
+
+    .result-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .result-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111827;
+    }
+    .result-sub {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+    .score-badge {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: #ede9fe;
+      color: #4f46e5;
+      white-space: nowrap;
+    }
+    .ai-explanation {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 14px;
+      color: #374151;
+      line-height: 1.6;
+      margin-top: 10px;
+      border: 1px solid #e5e7eb;
+    }
+    .ai-explanation::before {
+      content: "AI insight: ";
+      font-weight: 600;
+      color: #6366f1;
+    }
+
+    /* Spinner */
+    .spinner {
+      display: none;
+      width: 32px;
+      height: 32px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 30px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Error */
+    .error-msg {
+      background: #fef2f2;
+      color: #b91c1c;
+      padding: 14px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    /* Setup section */
+    .setup-card {
+      background: white;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+    }
+    .setup-card h3 { font-size: 16px; margin-bottom: 8px; }
+    .setup-card p  { font-size: 14px; color: #4b5563; margin-bottom: 16px; line-height: 1.6; }
+    .btn-setup {
+      padding: 10px 24px;
+      background: #0f172a;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-setup:hover    { background: #1e293b; }
+    .btn-setup:disabled { background: #94a3b8; cursor: not-allowed; }
+    .setup-log {
+      background: #0f172a;
+      color: #86efac;
+      border-radius: 8px;
+      padding: 14px;
+      font-family: monospace;
+      font-size: 13px;
+      margin-top: 14px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Resume Matcher</h1>
+    <p>AI-powered resume and job matching system</p>
+  </div>
+  <div id="status-badge">Checking...</div>
+</header>
+
+<main>
+
+  <!-- Setup card (only shown when index not ready) -->
+  <div class="setup-card" id="setup-section" style="display:none">
+    <h3>System not set up yet</h3>
+    <p>
+      The indexes are not built. Click the button below to download all resumes and JRs
+      from Azure, parse them, and build the search index. This only needs to be done once
+      (or when you add new data). It may take a few minutes.
+    </p>
+    <button class="btn-setup" id="btn-setup" onclick="runSetup()">Build Indexes Now</button>
+    <div class="setup-log" id="setup-log"></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('employer')">Employer Search</button>
+    <button class="tab" onclick="switchTab('candidate')">Candidate Search</button>
+  </div>
+
+  <!-- Employer Panel -->
+  <div class="panel active" id="panel-employer">
+    <div class="search-card">
+      <label>What kind of candidate are you looking for?</label>
+      <div class="search-row">
+        <textarea id="employer-query" placeholder="e.g. Give me candidates with 5+ years in finance and strong Python skills with good communication"></textarea>
+        <button class="btn-search" id="btn-employer" onclick="searchEmployer()">Search</button>
+      </div>
+      <div class="example-queries">
+        Try:
+        <span onclick="fillQuery('employer', 'Candidate with 5+ years of experience in finance, Python, and communication skills')">Finance + Python</span> &nbsp;|&nbsp;
+        <span onclick="fillQuery('employer', 'Senior data scientist with machine learning and SQL experience')">Senior Data Scientist</span> &nbsp;|&nbsp;
+        <span onclick="fillQuery('employer', 'Fresh graduate with Java and problem solving skills')">Fresh Graduate</span>
+      </div>
+    </div>
+    <div class="spinner" id="spinner-employer"></div>
+    <div class="error-msg" id="error-employer"></div>
+    <div id="results-employer"></div>
+  </div>
+
+  <!-- Candidate Panel -->
+  <div class="panel" id="panel-candidate">
+    <div class="search-card">
+      <label>Tell us about yourself — we'll find matching jobs</label>
+      <div class="search-row">
+        <textarea id="candidate-query" placeholder="e.g. I have 3 years of experience in data science with Python, SQL, and machine learning. I am looking for a senior role."></textarea>
+        <button class="btn-search" id="btn-candidate" onclick="searchCandidate()">Search</button>
+      </div>
+      <div class="example-queries">
+        Try:
+        <span onclick="fillQuery('candidate', 'I have 4 years in backend development with Python and Django, and I want a remote role')">Backend Developer</span> &nbsp;|&nbsp;
+        <span onclick="fillQuery('candidate', 'Fresh MBA graduate with finance and Excel skills looking for analyst roles')">MBA Graduate</span> &nbsp;|&nbsp;
+        <span onclick="fillQuery('candidate', 'I am a UI/UX designer with Figma and user research experience')">UX Designer</span>
+      </div>
+    </div>
+    <div class="spinner" id="spinner-candidate"></div>
+    <div class="error-msg" id="error-candidate"></div>
+    <div id="results-candidate"></div>
+  </div>
+
+</main>
+
+<script>
+  // ── Config ──────────────────────────────────────────────────
+  // Change this if your backend runs on a different port
+  const API_BASE = "http://127.0.0.1:8000";
+
+
+  // ── Status check on load ─────────────────────────────────────
+  async function checkStatus() {
+    const badge = document.getElementById("status-badge");
+    const setupSection = document.getElementById("setup-section");
+    try {
+      badge.textContent = "Checking...";
+      badge.className = "loading";
+      const res = await fetch(`${API_BASE}/status`);
+      const data = await res.json();
+      if (data.ready) {
+        badge.textContent = "System Ready";
+        badge.className = "ready";
+        setupSection.style.display = "none";
+      } else {
+        badge.textContent = "Not Set Up";
+        badge.className = "";
+        setupSection.style.display = "block";
+      }
+    } catch {
+      badge.textContent = "Backend Offline";
+      badge.className = "";
+      setupSection.style.display = "block";
+      document.getElementById("setup-log").style.display = "block";
+      document.getElementById("setup-log").textContent = "Cannot reach backend at " + API_BASE + "\nMake sure uvicorn is running.";
+    }
+  }
+
+  // ── Setup (build indexes) ────────────────────────────────────
+  async function runSetup() {
+    const btn = document.getElementById("btn-setup");
+    const log = document.getElementById("setup-log");
+    btn.disabled = true;
+    btn.textContent = "Building indexes...";
+    log.style.display = "block";
+    log.textContent = "Starting setup pipeline...\nThis may take 5-15 minutes for 100s of files.\n";
+
+    try {
+      const res = await fetch(`${API_BASE}/setup`, { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        log.textContent += `Done! Indexed ${data.resumes_indexed} resumes and ${data.jrs_indexed} JRs.\n`;
+        checkStatus();
+      } else {
+        log.textContent += "Error: " + data.detail;
+        btn.disabled = false;
+        btn.textContent = "Retry";
+      }
+    } catch (e) {
+      log.textContent += "Network error: " + e.message;
+      btn.disabled = false;
+      btn.textContent = "Retry";
+    }
+  }
+
+  // ── Tab switching ─────────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll(".tab").forEach((t, i) => {
+      t.classList.toggle("active", (i === 0 && name === "employer") || (i === 1 && name === "candidate"));
+    });
+    document.getElementById("panel-employer").classList.toggle("active", name === "employer");
+    document.getElementById("panel-candidate").classList.toggle("active", name === "candidate");
+  }
+
+  // ── Fill example queries ──────────────────────────────────────
+  function fillQuery(mode, text) {
+    document.getElementById(`${mode}-query`).value = text;
+  }
+
+  // ── Employer search ───────────────────────────────────────────
+  async function searchEmployer() {
+    const query = document.getElementById("employer-query").value.trim();
+    if (!query) return;
+
+    setLoading("employer", true);
+    clearResults("employer");
+
+    try {
+      const res = await fetch(`${API_BASE}/employer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Unknown error");
+      renderCandidateResults(data.results, "employer");
+    } catch (e) {
+      showError("employer", e.message);
+    } finally {
+      setLoading("employer", false);
+    }
+  }
+
+  // ── Candidate search ──────────────────────────────────────────
+  async function searchCandidate() {
+  const query = document.getElementById("candidate-query").value.trim();
+  if (!query) return;
+
+  setLoading("candidate", true);
+  clearResults("candidate");
+
+  try {
+    const res = await fetch(`${API_BASE}/candidate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query })
+    });
+
+    const text = await res.text();
+    let data;
+
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(text);
+    }
+
+
+    if (!res.ok) throw new Error(data.detail || "Unknown error");
+
+    renderJRResults(data.results, "candidate");
+
+  } catch (e) {
+    showError("candidate", e.message);
+  } finally {
+    setLoading("candidate", false);
+  }
+}
+
+  
+  // ── Render candidate results ──────────────────────────────────
+  function renderCandidateResults(results, panel) {
+    const container = document.getElementById(`results-${panel}`);
+    if (!results || results.length === 0) {
+      container.innerHTML = `<p style="color:#6b7280;font-size:14px">No matching candidates found.</p>`;
+      return;
+    }
+
+    const header = `<div class="results-header">${results.length} Matching Candidate${results.length > 1 ? "s" : ""}</div>`;
+    const cards = results.map((r, i) => {
+      const scorePercent = Math.round(r.score * 100);
+      return `
+        <div class="result-card">
+          <div class="result-top">
+            <div>
+              <div class="result-name">${r.candidate_name.replace(/\.[^.]+$/, "")}</div>
+              <div class="result-sub">Resume file: ${r.candidate_name}</div>
+            </div>
+            <div class="score-badge">Match: ${scorePercent}%</div>
+          </div>
+          <div class="ai-explanation">${r.explanation || "No explanation available."}</div>
+        </div>`;
+    }).join("");
+
+    container.innerHTML = header + cards;
+  }
+
+  // ── Render JR results ─────────────────────────────────────────
+  function renderJRResults(results, panel) {
+    const container = document.getElementById(`results-${panel}`);
+    if (!results || results.length === 0) {
+      container.innerHTML = `<p style="color:#6b7280;font-size:14px">No matching jobs found.</p>`;
+      return;
+    }
+
+    const header = `<div class="results-header">${results.length} Matching Job${results.length > 1 ? "s" : ""}</div>`;
+    const cards = results.map((r) => {
+      const scorePercent = Math.round(r.score * 100);
+      return `
+        <div class="result-card">
+          <div class="result-top">
+            <div>
+              <div class="result-name">${r.title}</div>
+              <div class="result-sub">Job ID: ${r.job_id}</div>
+            </div>
+            <div class="score-badge">Match: ${scorePercent}%</div>
+          </div>
+          <div class="ai-explanation">${r.explanation || "No explanation available."}</div>
+        </div>`;
+    }).join("");
+
+    container.innerHTML = header + cards;
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────
+  function setLoading(panel, loading) {
+    document.getElementById(`spinner-${panel}`).style.display = loading ? "block" : "none";
+    document.getElementById(`btn-${panel}`).disabled = loading;
+    document.getElementById(`btn-${panel}`).textContent = loading ? "Searching..." : "Search";
+  }
+
+  function clearResults(panel) {
+    document.getElementById(`results-${panel}`).innerHTML = "";
+    document.getElementById(`error-${panel}`).style.display = "none";
+  }
+
+  function showError(panel, msg) {
+    const el = document.getElementById(`error-${panel}`);
+    el.textContent = "Error: " + msg;
+    el.style.display = "block";
+  }
+
+  // Start
+  checkStatus();
+</script>
+</body>
+</html>
